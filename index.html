@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Text Change Logger with Typing Speed and Timestamps</title>
+    <style>
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        #typingSpeed {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Text Input Box</h2>
+    <textarea id="textInput"></textarea>
+
+    <h2>Change Log Box</h2>
+    <textarea id="logBox" readonly></textarea>
+
+    <div id="typingSpeed">Average Typing Speed: <span id="speed">0</span> CPM</div>
+
+    <script>
+        var previousText = "";
+        var typingStartTime = new Date();
+        var totalTypedCharacters = 0;
+
+        document.getElementById('textInput').addEventListener('input', function(event) {
+            var currentText = event.target.value;
+            updateTypingSpeed(currentText.length);
+
+            if (event.inputType !== 'insertFromPaste') {
+                var changes = detectChanges(previousText, currentText);
+                if (changes) {
+                    logChanges(changes);
+                }
+            }
+            previousText = currentText;
+        });
+
+        document.getElementById('textInput').addEventListener('paste', function(event) {
+            var pastedText = event.clipboardData.getData('text');
+            setTimeout(() => {
+                var currentText = document.getElementById('textInput').value;
+                logPastedText(pastedText, currentText);
+                previousText = currentText;
+            }, 1);
+        });
+
+        function detectChanges(oldText, newText) {
+            var changes = '';
+            var newTextLines = newText.split('\n');
+            newTextLines.forEach((line, lineIndex) => {
+                var words = line.split(/\s+/);
+                words.forEach((word, wordIndex) => {
+                    if (word.length >= 4 && oldText.indexOf(word) === -1) {
+                        changes += 'Changed: "' + word + '" at Line ' + (lineIndex + 1) + ', Word ' + (wordIndex + 1) + '\n';
+                    }
+                });
+            });
+            return changes;
+        }
+
+        function logChanges(message) {
+            var dateTime = new Date().toLocaleString();
+            var logBox = document.getElementById('logBox');
+            logBox.value += '[' + dateTime + '] ' + message;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function logPastedText(pastedText, fullText) {
+            var pastedPosition = fullText.indexOf(pastedText);
+            var textBeforePaste = fullText.substring(0, pastedPosition);
+            var lineCount = (textBeforePaste.match(/\n/g) || []).length + 1;
+            var wordCount = textBeforePaste.split(/\s+/).filter(Boolean).length + 1;
+            var dateTime = new Date().toLocaleString();
+            var logBox = document.getElementById('logBox');
+            logBox.value += '[' + dateTime + '] Pasted: "' + pastedText+ '"\n';
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function updateTypingSpeed(charCount) {
+            totalTypedCharacters += charCount;
+            var timeElapsed = (new Date() - typingStartTime) / 60000; // Convert ms to minutes
+            var speed = Math.round(totalTypedCharacters / timeElapsed);
+            document.getElementById('speed').textContent = speed;
+        }
+    </script>
+</body>
+</html>
